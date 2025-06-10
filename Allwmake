@@ -1,6 +1,6 @@
 #!/bin/bash
 cd "${0%/*}" || exit  # Run from this directory
 
-wmake stressAccumulation
+wmake applications/utilities/stressAccumulation
 
 #------------------------------------------------------------------------------

@@ -24,7 +24,7 @@ solvers
         smoother        GaussSeidel;
     }
 
-    "(U|k|epsilon|omega|f|v2|sigmaAccum)"
+    "(U|k|epsilon|omega|f|v2|sigmaAccum|damage|residenceTime)"
     {
         solver          smoothSolver;
         smoother        symGaussSeidel;

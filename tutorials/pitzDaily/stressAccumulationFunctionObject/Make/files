@@ -1,0 +1,3 @@
+stressAccumulationFunctionObject.C
+
+LIB = $(FOAM_USER_LIBBIN)/libstressAccumulationFunctionObject

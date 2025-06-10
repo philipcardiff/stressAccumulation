@@ -1,6 +1,6 @@
 #!/bin/bash
 cd "${0%/*}" || exit  # Run from this directory
 
-(cd pitzDaily && ./Allrun)
+(cd tutorials/pitzDaily && ./Allrun)
 
 #------------------------------------------------------------------------------

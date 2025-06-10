@@ -31,9 +31,14 @@ Description
     Utility that reads in the velocity field for all the time steps and
     calculates the accumulated shear stress field, defined as
 
-        stressAccum = \int_time sigmaEq dtime
+        stressAccum = integral-in-time sigma d(time)
 
-    where sigmaEq is the equivalent (von Mises) stress tensor.
+    where sigma is a scaled-version of the equivalent (von Mises) stress
+    tensor.
+
+    This approach is related to the description in Apel et al. (2001),
+    Assessment of Hemolysis Related Quantities in a Microaxial Blood Pump by
+    Computational Fluid Dynamics, Artificial Organs, 25(5):341–347.
 
 Author
     Philip Cardiff, UCD.
@@ -71,6 +76,34 @@ int main(int argc, char *argv[])
         mesh
     );
 
+    // Create the damage field
+    volScalarField damage
+    (
+        IOobject
+        (
+            "damage",
+            runTime.timeName(),
+            mesh,
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh
+    );
+
+    // Create the residence time field
+    volScalarField residenceTime
+    (
+        IOobject
+        (
+            "residenceTime",
+            runTime.timeName(),
+            mesh,
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh
+    );
+
     // Read the transport properties dict
     IOdictionary transportProps
     (
@@ -97,6 +130,11 @@ int main(int argc, char *argv[])
     // Calculate the dynamic viscosity
     const dimensionedScalar mu(nu*rho);
 
+    // Lookup the damage parameters
+    const dimensionedScalar sigma0("sigma0", transportProps);
+    const dimensionedScalar r("r", transportProps);
+    const dimensionedScalar k("k", transportProps);
+
     // Create the simple control
     simpleControl simple(mesh);
 
@@ -112,6 +150,10 @@ int main(int argc, char *argv[])
         runTime.setTime(timeDirs[timei], timei);
 
         Info<< nl << "Time: " << runTime.timeName() << endl;
+
+        // Note: this method is only correct is all time steps are writtne to
+        // disk!
+        const dimensionedScalar deltaT(runTime.deltaT());
 
         // Check for a mesh update
         mesh.readUpdate();
@@ -137,10 +179,11 @@ int main(int argc, char *argv[])
         // Calculate the deviatoric stress tensor
         const volSymmTensorField tau("tau", mu*dev(twoSymm(gradU)));
 
-        // Calculate equivalent (von Mises) stress
-        const volScalarField sigmaEq
+        // Calculate scalar equivalent stress - scaled version of the von Mises
+        // stress (2/3 rather than 3/2)
+        const volScalarField sigma
         (
-            "sigmaEq", sqrt((3.0/2.0)*magSqr(tau))
+            "sigma", sqrt((2.0/3.0)*magSqr(tau))
         );
 
         // Read the volume flux field
@@ -168,13 +211,44 @@ int main(int argc, char *argv[])
         }
 
         // Add sigmaAccum creation in this time step
-        sigmaAccum += sigmaEq*runTime.deltaT();
+        sigmaAccum += sigma*deltaT;
+
+        // Advect the old damage field
+        while (simple.correctNonOrthogonal())
+        {
+            solve
+            (
+                fvm::ddt(damage)
+              + fvm::div(phi, damage)
+            );
+        }
+
+        // Increment damage
+        damage +=
+            Foam::pow(sigma/sigma0, r)
+           *deltaT.value()/Foam::pow(1.0 - damage, k);
+
+        // Advect the old residenceTime field
+        while (simple.correctNonOrthogonal())
+        {
+            solve
+            (
+                fvm::ddt(residenceTime)
+              + fvm::div(phi, residenceTime)
+            );
+        }
+
+        // Increment damage
+        residenceTime += deltaT;
 
         // Write the stress fields
-        Info<< "Writing tau, sigmaEq and sigmaAccum" << endl;
+        Info<< "Writing tau, sigma, sigmaAccum, damage and residenceTime to "
+            << "Time = " << runTime.timeName() << endl;
         tau.write();
-        sigmaEq.write();
+        sigma.write();
         sigmaAccum.write();
+        damage.write();
+        residenceTime.write();
     }
 
     Info<< nl << "End" << nl << endl;

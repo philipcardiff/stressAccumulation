@@ -10,44 +10,18 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    object      controlDict;
+    object      transportProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     simpleFoam;
+transportModel  Newtonian;
 
-startFrom       startTime;
+nu              1e-05;
+rho             [1 -3 0 0 0 0 0] 1;
 
-startTime       0;
-
-stopAt          endTime;
-
-endTime         2000;
-
-deltaT          1;
-
-writeControl    timeStep;
-
-writeInterval   1;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  6;
-
-writeCompression off;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable true;
-
-functions
-{
-    #includeFunc streamlines
-}
-
+// Damage properties
+sigma0    [1 -1 -2 0 0 0 0] 1.0;
+k         -1.0;
+r         5.0;
 
 // ************************************************************************* //

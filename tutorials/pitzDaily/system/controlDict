@@ -10,56 +10,57 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    object      fvSchemes;
+    object      controlDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-ddtSchemes
+libs            ("libstressAccumulationFunctionObject.so");
+
+application     simpleFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         2000;
+
+deltaT          1;
+
+writeControl    timeStep;
+
+writeInterval   1;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+functions
 {
-    default         steadyState;
-    ddt(sigmaAccum) backward;
-}
+    stressAccumulation
+    {
+        type stressAccumulation;
+        outletPatch outlet;
 
-gradSchemes
-{
-    default         Gauss linear;
-}
+        // Damage properties
+        sigma0    [1 -1 -2 0 0 0 0] 100;
+        k         -1.0;
+        r         5.0;
 
-divSchemes
-{
-    default         none;
-
-    div(phi,U)      bounded Gauss linearUpwind grad(U);
-    // div(phi,sigmaAccum) bounded Gauss limitedLinear 1;
-    div(phi,sigmaAccum) Gauss linearUpwind grad(sigmaAccum);
-
-    turbulence      bounded Gauss limitedLinear 1;
-    div(phi,k)      $turbulence;
-    div(phi,epsilon) $turbulence;
-    div(phi,omega)  $turbulence;
-
-    div(nonlinearStress) Gauss linear;
-    div((nuEff*dev2(T(grad(U))))) Gauss linear;
-}
-
-laplacianSchemes
-{
-    default         Gauss linear corrected;
-}
-
-interpolationSchemes
-{
-    default         linear;
-}
-
-snGradSchemes
-{
-    default         corrected;
-}
-
-wallDist
-{
-    method          meshWave;
+        // Non-orthogonal correctors for transport equations
+        nNonOrthoCorr 3;
+    }
 }
 
 
