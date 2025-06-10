@@ -126,13 +126,33 @@ bool Foam::stressAccumulationFunctionObject::writeData()
         // Increment damage
         residenceTime_ += deltaT;
 
-        // Write outlet integrals to file
-        if (Pstream::master())
+        if (outletPatchID_ != -1)
         {
-            historyFilePtr_()
-                << time_.time().value()
-                // << " " << avDisp.z()
-                << endl;
+            // Calculate the integral of stressAccum through the outlet
+            integralSigmaAccum_ +=
+                gSum
+                (
+                    phi.boundaryField()[outletPatchID_]
+                   *sigmaAccum_.boundaryField()[outletPatchID_]
+                );
+
+            // Calculate the integral of damage through the outlet
+            integralDamage_ +=
+                gSum
+                (
+                    phi.boundaryField()[outletPatchID_]
+                   *damage_.boundaryField()[outletPatchID_]
+                );
+
+            // Write outlet integrals to file
+            if (Pstream::master())
+            {
+                historyFilePtr_()
+                    << time_.time().value()
+                    << " " << integralSigmaAccum_
+                    << " " << integralDamage_
+                    << endl;
+            }
         }
     }
     else
@@ -211,7 +231,9 @@ Foam::stressAccumulationFunctionObject::stressAccumulationFunctionObject
     sigma0_("sigma0", dict),
     r_("r", dict),
     k_("k", dict),
-    nNonOrthoCorr_(readInt(dict.lookup("nNonOrthoCorr")))
+    nNonOrthoCorr_(readInt(dict.lookup("nNonOrthoCorr"))),
+    integralSigmaAccum_(0.0),
+    integralDamage_(0.0)
 {
     Info<< "Creating " << this->name() << " function object" << endl;
 
@@ -276,7 +298,8 @@ Foam::stressAccumulationFunctionObject::stressAccumulationFunctionObject
             {
                 historyFilePtr_()
                     << "# Time"
-                    << " " << "-"
+                    << " " << "sigmaAccum"
+                    << " " << "damage"
                     << endl;
             }
         }
