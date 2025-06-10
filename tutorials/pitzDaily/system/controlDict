@@ -14,8 +14,6 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-libs            ("libstressAccumulationFunctionObject.so");
-
 application     simpleFoam;
 
 startFrom       startTime;
@@ -51,6 +49,7 @@ functions
     stressAccumulation
     {
         type stressAccumulation;
+        libs ("libstressAccumulationFunctionObject.so");
         outletPatch outlet;
 
         // Damage properties
