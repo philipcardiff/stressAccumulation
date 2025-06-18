@@ -103,11 +103,11 @@ class stressAccumulationFunctionObject
         //- Number of non-orthogonal correctors
         const label nNonOrthoCorr_;
 
-        //- Accumulated integral of sigmaAccum through the outlet
-        scalar integralSigmaAccum_;
+        // //- Accumulated integral of sigmaAccum through the outlet
+        // scalar integralSigmaAccum_;
 
-        //- Accumulated integral of damage through the outlet
-        scalar integralDamage_;
+        // //- Accumulated integral of damage through the outlet
+        // scalar integralDamage_;
 
 
     // Private Member Functions

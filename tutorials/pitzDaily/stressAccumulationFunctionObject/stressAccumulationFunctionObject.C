@@ -128,29 +128,45 @@ bool Foam::stressAccumulationFunctionObject::writeData()
 
         if (outletPatchID_ != -1)
         {
-            // Calculate the integral of stressAccum through the outlet
-            integralSigmaAccum_ +=
-                gSum
-                (
-                    phi.boundaryField()[outletPatchID_]
-                   *sigmaAccum_.boundaryField()[outletPatchID_]
-                );
+            // // These integrals do not make sense!
+            // // Calculate the integral of stressAccum through the outlet
+            // integralSigmaAccum_ = // Pa m3
+            //     gAverage
+            //     (
+            //         phi.boundaryField()[outletPatchID_] // m3/s
+            //         sigmaAccum_.boundaryField()[outletPatchID_]
+            //     );
 
-            // Calculate the integral of damage through the outlet
-            integralDamage_ +=
-                gSum
-                (
-                    phi.boundaryField()[outletPatchID_]
-                   *damage_.boundaryField()[outletPatchID_]
-                );
+            // // Calculate the integral of damage through the outlet
+            // integralDamage_ +=
+            //     gSum
+            //     (
+            //         phi.boundaryField()[outletPatchID_]
+            //        *damage_.boundaryField()[outletPatchID_]
+            //     );
+
+            // Calculate the instantaneous weighted average of sigmaAccum and
+            // damage at the outlet
+
+            const scalarField weights
+            (
+                mesh_.boundary()[outletPatchID_].magSf()
+               /gSum(mesh_.boundary()[outletPatchID_].magSf())
+            );
+
+            const scalar sigmaAccumAverage =
+                gSum(sigmaAccum_.boundaryField()[outletPatchID_]*weights);
+
+            const scalar damageAverage =
+                gSum(damage_.boundaryField()[outletPatchID_]*weights);
 
             // Write outlet integrals to file
             if (Pstream::master())
             {
                 historyFilePtr_()
                     << time_.time().value()
-                    << " " << integralSigmaAccum_
-                    << " " << integralDamage_
+                    << " " << sigmaAccumAverage
+                    << " " << damageAverage
                     << endl;
             }
         }
@@ -231,9 +247,9 @@ Foam::stressAccumulationFunctionObject::stressAccumulationFunctionObject
     sigma0_("sigma0", dict),
     r_("r", dict),
     k_("k", dict),
-    nNonOrthoCorr_(readInt(dict.lookup("nNonOrthoCorr"))),
-    integralSigmaAccum_(0.0),
-    integralDamage_(0.0)
+    nNonOrthoCorr_(readInt(dict.lookup("nNonOrthoCorr")))
+    // integralSigmaAccum_(0.0),
+    // integralDamage_(0.0)
 {
     Info<< "Creating " << this->name() << " function object" << endl;
 
